@@ -100,7 +100,6 @@ export default function Chat({ user, loginTimestamp }) {
   const [exercisePhaseIndex, setExercisePhaseIndex] = useState(0);
   const [exercisePhaseTimer, setExercisePhaseTimer] = useState(0);
   const [isPracticing, setIsPracticing] = useState(false);
-  const [glossary, setGlossary] = useState({});
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const audioRef = useRef(null);
@@ -136,57 +135,6 @@ export default function Chat({ user, loginTimestamp }) {
     return { __html: marked(content) };
   };
 
-  // Function to wrap Ayurvedic terms with tooltips
-  const addGlossaryTooltips = (htmlContent) => {
-    if (!glossary || Object.keys(glossary).length === 0) return htmlContent;
-    
-    // Create a temporary div to parse HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-    
-    // Function to recursively process text nodes
-    const processTextNode = (node) => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        let text = node.textContent;
-        
-        // Sort terms by length (longest first) to avoid partial matches
-        const sortedTerms = Object.keys(glossary).sort((a, b) => b.length - a.length);
-        
-        let hasMatch = false;
-        sortedTerms.forEach(term => {
-          const definition = glossary[term];
-          const regex = new RegExp(`\\b(${term})\\b`, 'gi');
-          
-          if (regex.test(text)) {
-            hasMatch = true;
-            text = text.replace(regex, (match) => {
-              return `<span class="ayur-term" data-tooltip="${definition.definition.replace(/"/g, '&quot;')}">${match}</span>`;
-            });
-          }
-        });
-        
-        if (hasMatch) {
-          const span = document.createElement('span');
-          span.innerHTML = text;
-          node.parentNode.replaceChild(span, node);
-        }
-      } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'CODE' && node.tagName !== 'PRE') {
-        // Don't process code blocks
-        Array.from(node.childNodes).forEach(processTextNode);
-      }
-    };
-    
-    processTextNode(tempDiv);
-    return tempDiv.innerHTML;
-  };
-
-  // Function to render markdown with glossary tooltips
-  const renderMarkdownWithGlossary = (content) => {
-    const markedContent = marked(content);
-    const contentWithTooltips = addGlossaryTooltips(markedContent);
-    return { __html: contentWithTooltips };
-  };
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -198,7 +146,6 @@ export default function Chat({ user, loginTimestamp }) {
   useEffect(() => {
     fetchChatHistory();
     fetchSuggestions();
-    fetchGlossary();
     
     // Show Sanskrit quote only once per login session
     const quoteShownForSession = sessionStorage.getItem(`quoteShown_${loginTimestamp}`);
@@ -327,31 +274,12 @@ export default function Chat({ user, loginTimestamp }) {
     }
   };
 
-  const fetchGlossary = async () => {
-    try {
-      const response = await articlesAPI.getGlossary();
-      if (response.data.success && Array.isArray(response.data.data)) {
-        // Convert array to object with term as key for faster lookup
-        const glossaryMap = {};
-        response.data.data.forEach(item => {
-          glossaryMap[item.term] = item;
-          // Also add transliteration as a key if different from term
-          if (item.transliteration && item.transliteration !== item.term) {
-            glossaryMap[item.transliteration] = item;
-          }
-        });
-        setGlossary(glossaryMap);
-      }
-    } catch (error) {
-      console.error('Failed to fetch glossary:', error);
-    }
-  };
-
   const fetchChatHistory = async () => {
     try {
       const response = await chatAPI.getHistory({ limit: 20 });
-      if (response.data.success) {
-        const history = response.data.data.consultations.map(consultation => [
+      if (response.data.success && response.data.data.consultations) {
+        const consultations = response.data.data.consultations || [];
+        const history = consultations.map(consultation => [
           {
             type: 'user',
             content: consultation.chiefComplaint,
@@ -366,9 +294,14 @@ export default function Chat({ user, loginTimestamp }) {
         ]).flat().reverse();
         
         setMessages(history);
+      } else {
+        // New user with no history
+        setMessages([]);
       }
     } catch (error) {
       console.error('Failed to fetch history:', error);
+      // Set empty messages for new users or on error
+      setMessages([]);
     } finally {
       setLoadingHistory(false);
     }
@@ -573,8 +506,8 @@ export default function Chat({ user, loginTimestamp }) {
                           <p className="whitespace-pre-wrap">{message.content}</p>
                         ) : (
                           <div 
-                            className="markdown-content prose prose-sm max-w-none ayur-glossary-content"
-                            dangerouslySetInnerHTML={renderMarkdownWithGlossary(message.content)}
+                            className="markdown-content prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={renderMarkdown(message.content)}
                           />
                         )}
                       </div>

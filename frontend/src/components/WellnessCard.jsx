@@ -32,7 +32,7 @@ export default function WellnessCard({ wellnessCard, profile, birthDetails, onRe
   return (
     <div className="space-y-6">
       {/* Card Header */}
-      <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 rounded-xl p-6 border-2 border-purple-200 relative">
+      <div className="bg-gradient-to-r from-green-50 via-teal-50 to-emerald-50 rounded-xl p-6 border-2 border-green-300 relative">
         {/* Refresh Button */}
         {onRefresh && (
           <button
@@ -41,7 +41,7 @@ export default function WellnessCard({ wellnessCard, profile, birthDetails, onRe
               onRefresh(e);
             }}
             disabled={isRefreshing}
-            className="absolute top-4 right-4 p-2 bg-white hover:bg-purple-50 text-purple-600 rounded-full shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+            className="absolute top-4 right-4 p-2 bg-white hover:bg-green-50 text-green-600 rounded-full shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
             title="Refresh card with current astrological data"
           >
             <FaSyncAlt className={`text-lg ${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
@@ -49,10 +49,10 @@ export default function WellnessCard({ wellnessCard, profile, birthDetails, onRe
         )}
         
         <div className="text-center mb-4">
-          <h3 className="text-2xl font-bold text-purple-900 mb-2">{profile.name}</h3>
+          <h3 className="text-2xl font-bold text-green-900 mb-2">{profile.name}</h3>
           <p className="text-sm text-gray-600 flex items-center justify-center space-x-2 flex-wrap">
             <span className="flex items-center space-x-1">
-              <FaCalendar className="text-purple-600" />
+              <FaCalendar className="text-green-600" />
               <span>
                 {(() => {
                   const dateValue = profile.dob || birthDetails.date;
@@ -69,13 +69,13 @@ export default function WellnessCard({ wellnessCard, profile, birthDetails, onRe
             </span>
             {birthDetails.time && (
               <span className="flex items-center space-x-1">
-                <FaClock className="text-purple-600" />
+                <FaClock className="text-green-600" />
                 <span>{birthDetails.time}</span>
               </span>
             )}
             {birthDetails.place && (
               <span className="flex items-center space-x-1">
-                <FaMapMarkerAlt className="text-purple-600" />
+                <FaMapMarkerAlt className="text-green-600" />
                 <span>{birthDetails.place}</span>
               </span>
             )}
@@ -85,7 +85,7 @@ export default function WellnessCard({ wellnessCard, profile, birthDetails, onRe
         {/* Ayurvedic-Astro Type */}
         <div className="bg-white/80 rounded-lg p-4 mb-4">
           <p className="text-sm text-gray-600 mb-1">Ayurvedic–Astro Constitution:</p>
-          <p className="text-3xl font-bold text-purple-700">{wellnessCard.astroType}</p>
+          <p className="text-3xl font-bold text-green-700">{wellnessCard.astroType}</p>
           <p className="text-sm text-gray-600 mt-1 flex items-center justify-center space-x-2">
             <span>Dominant Element:</span>
             {getElementIcon(wellnessCard.dominantElement)}
@@ -151,19 +151,19 @@ export default function WellnessCard({ wellnessCard, profile, birthDetails, onRe
       </div>
 
       {/* Daily Mantra */}
-      <div className="bg-gradient-to-r from-orange-50 to-pink-50 rounded-lg p-5 border-2 border-orange-200">
+      <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-5 border-2 border-green-200">
         <h4 className="font-bold text-gray-800 mb-2 text-center flex items-center justify-center">
           <span className="mr-2">🕉️</span>
           Daily Mantra:
         </h4>
-        <p className="text-center text-lg font-semibold text-orange-900 italic">
+        <p className="text-center text-lg font-semibold text-green-900 italic">
           "{wellnessCard.dailyMantra}"
         </p>
       </div>
 
       <p className="text-xs text-gray-400 text-center mt-4">
         {isRefreshing ? (
-          <span className="text-purple-600 font-semibold">♻️ Refreshing with current astrological data...</span>
+          <span className="text-green-600 font-semibold">♻️ Refreshing with current astrological data...</span>
         ) : (
           <>
             Last updated: {(() => {

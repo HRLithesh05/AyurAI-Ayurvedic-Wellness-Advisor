@@ -1,6 +1,7 @@
 import Consultation from '../models/Consultation.js';
 import Article from '../models/Article.js';
 import User from '../models/User.js';
+import Wellness from '../models/Wellness.js';
 import { getOpenAIClient, getOpenAIChatCompletion, AYURAI_SYSTEM_PROMPT } from '../config/openai.js';
 import { detectRedFlags, detectCautionFlags, determineTriageLevel, buildSafetyMessage } from '../utils/redFlags.js';
 import { buildOpenAIContext, extractSymptoms, getCurrentSeason, getTimeOfDay } from '../utils/contextBuilder.js';
@@ -24,6 +25,8 @@ export const sendMessage = async (req, res) => {
 
     // Get user data with full context
     const user = await User.findById(userId);
+    // Add this: fetch active wellness card
+    const wellness = await Wellness.findOne({ userId, isActive: true });
     
     // Analyze comprehensive user context for personalization
     const userContext = await analyzeUserContext(userId);
@@ -184,6 +187,20 @@ ${imbalanceSigns.length > 0 ? `
 The user's message indicates potential ${userContext.prakriti.dominant} imbalance:
 ${imbalanceSigns.map(s => `- ${s.sign} (${s.type})`).join('\n')}
 Consider addressing these in your response.
+` : ''}
+
+${wellness ? `
+WELLNESS CARD (Astro-Ayurveda):
+- Sun Sign: ${wellness.wellnessCard?.sunSign || 'Not available'}
+- Moon Sign: ${wellness.wellnessCard?.moonSign || 'Not available'}
+- Ascendant: ${wellness.wellnessCard?.ascendant || 'Not available'}
+- Astro Type: ${wellness.wellnessCard?.astroType || 'Not available'}
+- Dominant Element: ${wellness.wellnessCard?.dominantElement || 'Not available'}
+- Dominant Planet: ${wellness.wellnessCard?.dominantPlanet || 'Not available'}
+- Traits: ${Array.isArray(wellness.wellnessCard?.traits) ? wellness.wellnessCard.traits.join(', ') : 'Not available'}
+- Balance Tips: ${Array.isArray(wellness.wellnessCard?.balanceTips) ? wellness.wellnessCard.balanceTips.join('; ') : 'Not available'}
+- Planetary Insight: ${wellness.wellnessCard?.planetaryInsight || 'Not available'}
+- Daily Mantra: ${wellness.wellnessCard?.dailyMantra || 'Not available'}
 ` : ''}
 
 ${hasPrakriti && dietaryRecs ? `
