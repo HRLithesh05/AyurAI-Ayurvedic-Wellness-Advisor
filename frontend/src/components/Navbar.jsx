@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { FaLeaf, FaUser, FaSignOutAlt, FaBook, FaInfoCircle } from 'react-icons/fa';
+import { FaLeaf, FaUser, FaSignOutAlt, FaBook, FaInfoCircle, FaBell } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 import { articlesAPI } from '../services/api';
 
@@ -160,6 +160,14 @@ export default function Navbar({ user, onLogout }) {
                   className="bg-ayur-secondary text-ayur-primary px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition"
                 >
                   Chat
+                </Link>
+                <Link 
+                  to="/reminders" 
+                  className="flex items-center space-x-1 hover:text-ayur-secondary transition"
+                  title="Daily Reminders"
+                >
+                  <FaBell />
+                  <span className="hidden sm:inline">Reminders</span>
                 </Link>
                 <Link 
                   to="/profile" 

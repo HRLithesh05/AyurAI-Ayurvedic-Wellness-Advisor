@@ -8,10 +8,10 @@ import { generateWellnessCard } from '../utils/astrologyService.js';
 // @access  Private
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     
     // Fetch active wellness card data
-    const wellnessCard = await Wellness.getActiveWellnessCard(req.user.id);
+    const wellnessCard = await Wellness.getActiveWellnessCard(req.user._id);
     
     console.log('📋 Profile fetched for user:', user.name);
     if (user.prakriti?.doshaScores) {
@@ -70,7 +70,7 @@ export const updateProfile = async (req, res) => {
     if (prakriti) updateData.prakriti = prakriti;
 
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      req.user._id,
       updateData,
       { new: true, runValidators: true }
     );
@@ -110,7 +110,7 @@ export const submitPrakritiAssessment = async (req, res) => {
   try {
     const { doshaScores } = req.body;
 
-    console.log('📊 Submitting Prakriti assessment for user:', req.user.id);
+    console.log('📊 Submitting Prakriti assessment for user:', req.user._id);
     console.log('📊 Dosha scores received:', doshaScores);
 
     // Validate that scores sum to approximately 100 (with some tolerance for rounding)
@@ -124,7 +124,7 @@ export const submitPrakritiAssessment = async (req, res) => {
     console.log('🌿 Dominant dosha calculated:', dominantDosha);
 
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      req.user._id,
       {
         'prakriti.assessed': true,
         'prakriti.doshaScores': doshaScores,
@@ -162,7 +162,7 @@ export const submitPrakritiAssessment = async (req, res) => {
 // @access  Private
 export const getPrakriti = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('prakriti');
+    const user = await User.findById(req.user._id).select('prakriti');
 
     res.status(200).json({
       success: true,
@@ -224,11 +224,11 @@ export const generateWellnessCardController = async (req, res) => {
     }
 
     // Deactivate old wellness cards for this user
-    await Wellness.deactivateOldCards(req.user.id);
+    await Wellness.deactivateOldCards(req.user._id);
 
     // Create new wellness card in Wellness collection
     const wellnessCard = await Wellness.create({
-      userId: req.user.id,
+      userId: req.user._id,
       birthDetails: {
         date: new Date(birthDate),
         time: birthTime,
@@ -255,14 +255,14 @@ export const generateWellnessCardController = async (req, res) => {
 
     // Update user profile completion status
     await User.findByIdAndUpdate(
-      req.user.id,
+      req.user._id,
       {
         'profileCompletion.wellnessCardGenerated': true
       },
       { new: true }
     );
 
-    console.log('🌟 Wellness Card generated for user:', req.user.id);
+    console.log('🌟 Wellness Card generated for user:', req.user._id);
     console.log('🔮 Astro-Ayurvedic Type:', result.data.astroType);
 
     res.status(200).json({

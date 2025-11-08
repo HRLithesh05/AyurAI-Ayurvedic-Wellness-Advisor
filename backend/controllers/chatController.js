@@ -21,7 +21,7 @@ import { getCurrentRitu, getCurrentTimeOfDay } from '../utils/seasonDetector.js'
 export const sendMessage = async (req, res) => {
   try {
     const { message, vitals, symptoms: providedSymptoms } = req.body;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     // Get user data with full context
     const user = await User.findById(userId);
@@ -399,7 +399,7 @@ Please provide a deeply personalized, context-aware Ayurvedic response. Remember
 // @access  Private
 export const getChatHistory = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const { limit = 20, page = 1 } = req.query;
 
     const skip = (page - 1) * limit;
@@ -442,7 +442,7 @@ export const getConsultation = async (req, res) => {
   try {
     const consultation = await Consultation.findOne({
       _id: req.params.id,
-      userId: req.user.id
+      userId: req.user._id
     }).populate('articlesReferenced', 'title slug body');
 
     if (!consultation) {
@@ -475,7 +475,7 @@ export const submitFeedback = async (req, res) => {
     const { helpful, rating, comment } = req.body;
 
     const consultation = await Consultation.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id, userId: req.user._id },
       {
         userFeedback: { helpful, rating, comment }
       },
@@ -510,7 +510,7 @@ export const submitFeedback = async (req, res) => {
 // @access  Private
 export const getSmartSuggestions = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     // Get user profile with Prakriti
     const user = await User.findById(userId);
@@ -558,16 +558,24 @@ export const getSmartSuggestions = async (req, res) => {
     recentConsultations.forEach(consultation => {
       if (consultation.symptoms && Array.isArray(consultation.symptoms)) {
         consultation.symptoms.forEach(s => {
-          // Handle both string and object formats
-          let symptomText = '';
-          if (typeof s === 'string') {
-            symptomText = s;
-          } else if (s && typeof s === 'object') {
-            symptomText = s.name || s.symptom || s.description || '';
+          // Handle symptom objects (based on Consultation schema: { name, onset, severity, duration, description })
+          if (s && typeof s === 'object' && s.name) {
+            symptoms.add(s.name.toLowerCase());
+          } else if (typeof s === 'string') {
+            // Fallback for legacy string format
+            symptoms.add(s.toLowerCase());
           }
-          
-          if (symptomText && typeof symptomText === 'string') {
-            symptoms.add(symptomText.toLowerCase());
+        });
+      }
+      
+      // Also check chiefComplaint for symptom keywords
+      if (consultation.chiefComplaint) {
+        const complaint = consultation.chiefComplaint.toLowerCase();
+        // Extract common symptom keywords from complaint
+        const commonSymptoms = ['headache', 'migraine', 'insomnia', 'sleep', 'digestion', 'bloating', 'gas', 'stress', 'anxiety', 'pain', 'joint'];
+        commonSymptoms.forEach(symptom => {
+          if (complaint.includes(symptom)) {
+            symptoms.add(symptom);
           }
         });
       }
@@ -651,7 +659,7 @@ export const getSmartSuggestions = async (req, res) => {
 // @access  Private
 export const getQuickPractice = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const user = await User.findById(userId);
     
     // Get current time and season

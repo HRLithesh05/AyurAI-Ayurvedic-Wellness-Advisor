@@ -13,6 +13,8 @@ import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
 import profileRoutes from './routes/profile.js';
 import articlesRoutes from './routes/articles.js';
+import reminderRoutes from './routes/reminders.js';
+import mlRoutes from './routes/ml.js';
 
 // Initialize Express app
 const app = express();
@@ -64,7 +66,9 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       chat: '/api/chat',
       profile: '/api/profile',
-      articles: '/api/articles'
+      articles: '/api/articles',
+      reminders: '/api/reminders',
+      ml: '/api/ml'
     }
   });
 });
@@ -74,6 +78,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/articles', articlesRoutes);
+app.use('/api/reminders', reminderRoutes);
+app.use('/api/ml', mlRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

@@ -9,6 +9,7 @@ import Chat from './pages/Chat';
 import Profile from './pages/Profile';
 import Articles from './pages/Articles';
 import ArticleView from './pages/ArticleView';
+import Reminders from './pages/Reminders';
 
 // Components
 import Navbar from './components/Navbar';
@@ -122,6 +123,10 @@ function App() {
             <Route 
               path="/profile" 
               element={user ? <Profile user={user} setUser={setUser} /> : <Navigate to="/login" replace />} 
+            />
+            <Route 
+              path="/reminders" 
+              element={user ? <Reminders /> : <Navigate to="/login" replace />} 
             />
             <Route path="/articles" element={<Articles />} />
             <Route path="/articles/:id" element={<ArticleView />} />

@@ -74,4 +74,21 @@ export const articlesAPI = {
   getGlossary: () => api.get('/articles/reference/glossary'),
 };
 
+// Reminders API
+export const remindersAPI = {
+  getReminders: () => api.get('/reminders'),
+  createReminder: (data) => api.post('/reminders', data),
+  initializeReminders: () => api.post('/reminders/initialize', {}),
+  getTodayReminders: () => api.get('/reminders/today'),
+  updateReminder: (id, data) => api.put(`/reminders/${id}`, data),
+  deleteReminder: (id) => api.delete(`/reminders/${id}`),
+  toggleReminder: (id) => api.patch(`/reminders/${id}/toggle`, {}),
+};
+
+// ML API
+export const mlAPI = {
+  getQuestions: () => api.get('/ml/questions'),
+  predictPrakriti: (data) => api.post('/ml/predict', data),
+};
+
 export default api;

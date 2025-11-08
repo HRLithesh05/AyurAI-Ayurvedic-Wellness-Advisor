@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FaUser, FaLeaf, FaHeartbeat, FaSave, FaCalendar, FaExternalLinkAlt, FaStar } from 'react-icons/fa';
+import { FaUser, FaLeaf, FaHeartbeat, FaSave, FaCalendar, FaStar, FaRobot } from 'react-icons/fa';
 import { profileAPI } from '../services/api';
 import { getErrorMessage, getDoshaColor, formatDate } from '../utils/helpers';
 import Loading from '../components/Loading';
-import PrakritiQuiz from '../components/PrakritiQuiz';
+import MLPrakritiAssessment from '../components/MLPrakritiAssessment';
 import WellnessCard from '../components/WellnessCard';
 import WellnessCardForm from '../components/WellnessCardForm';
 
@@ -253,72 +253,71 @@ export default function Profile({ user, setUser }) {
     }
   };
 
-  const handleQuizComplete = async (quizResults) => {
+  const handleMLAssessmentComplete = async (mlResults) => {
     setLoading(true);
     setMessage({ type: '', text: '' });
     
     try {
-      console.log('Submitting Prakriti assessment:', quizResults);
+      console.log('ML Prakriti prediction complete:', mlResults);
       
-      // Submit prakriti assessment
-      const response = await profileAPI.submitPrakriti({
-        doshaScores: {
-          vata: quizResults.vata,
-          pitta: quizResults.pitta,
-          kapha: quizResults.kapha
+      // Update local prakriti state with ML results
+      setPrakriti({
+        vata: mlResults.doshaScores.vata,
+        pitta: mlResults.doshaScores.pitta,
+        kapha: mlResults.doshaScores.kapha,
+        dominantDosha: mlResults.dominantDosha,
+        assessed: true,
+        mlPrediction: {
+          prediction: mlResults.prediction,
+          confidence: mlResults.confidence
         }
       });
-
-      console.log('Prakriti assessment response:', response.data);
-
-      if (response.data.success) {
-        // Update local prakriti state
-        setPrakriti({
-          vata: quizResults.vata,
-          pitta: quizResults.pitta,
-          kapha: quizResults.kapha,
-          dominantDosha: quizResults.dominantDosha,
-          assessed: true
-        });
-        
-        // Update global user state
-        const updatedUser = { 
-          ...user, 
-          prakriti: {
-            assessed: true,
-            doshaScores: {
-              vata: quizResults.vata,
-              pitta: quizResults.pitta,
-              kapha: quizResults.kapha
-            },
-            dominantDosha: quizResults.dominantDosha
+      
+      // Update global user state
+      const updatedUser = { 
+        ...user, 
+        prakriti: {
+          assessed: true,
+          doshaScores: mlResults.doshaScores,
+          dominantDosha: mlResults.dominantDosha,
+          mlPrediction: {
+            prediction: mlResults.prediction,
+            confidence: mlResults.confidence
           }
-        };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-        // Refresh profile to get latest data
-        await fetchProfile();
-        
-        setShowQuiz(false);
-        setMessage({ type: 'success', text: '✅ Prakriti assessment saved successfully!' });
-        setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-      }
+        }
+      };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Refresh profile to get latest data
+      await fetchProfile();
+      
+      setShowQuiz(false);
+      setMessage({ type: 'success', text: '✅ Prakriti assessment saved successfully!' });
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+
     } catch (error) {
       console.error('Error saving Prakriti assessment:', error);
       console.error('Error response:', error.response?.data);
       setMessage({ type: 'error', text: getErrorMessage(error) });
     } finally {
       setLoading(false);
+      setShowQuiz(false);
     }
   };
 
   if (showQuiz) {
     return (
-      <PrakritiQuiz
-        onComplete={handleQuizComplete}
-        onCancel={() => setShowQuiz(false)}
-      />
+      <div className="min-h-screen bg-ayur-light py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <MLPrakritiAssessment
+              onComplete={handleMLAssessmentComplete}
+              onCancel={() => setShowQuiz(false)}
+            />
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -471,68 +470,83 @@ export default function Profile({ user, setUser }) {
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-ayur-light rounded-lg">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-bold">Note:</span> Your prakriti is automatically calculated 
-                    from your conversations with AyurAI. It helps provide personalized recommendations 
-                    based on your unique constitution.
-                  </p>
+                <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                  <div className="flex items-start space-x-3">
+                    <FaRobot className="text-2xl text-purple-600 mt-1" />
+                    <div>
+                      <p className="text-sm font-bold text-purple-900 mb-1">
+                        AI-Powered Analysis
+                      </p>
+                      <p className="text-sm text-purple-800">
+                        {prakriti.mlPrediction ? (
+                          <>
+                            Your prakriti was determined using a machine learning model trained on 1,200 
+                            Ayurvedic profiles with <span className="font-bold">{Math.round(prakriti.mlPrediction.confidence * 100)}% confidence</span>.
+                            This helps provide personalized recommendations based on your unique constitution.
+                          </>
+                        ) : (
+                          <>
+                            Your prakriti helps provide personalized recommendations based on your unique constitution.
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Take Quiz Buttons */}
-                <div className="mt-4 space-y-3">
+                {/* Retake Assessment Button */}
+                <div className="mt-4">
                   <button
                     onClick={() => setShowQuiz(true)}
-                    className="w-full flex items-center justify-center space-x-2 bg-ayur-primary hover:bg-opacity-90 text-white px-4 py-3 rounded-lg font-medium transition"
+                    className="w-full flex items-center justify-center space-x-2 bg-ayur-primary hover:bg-opacity-90 text-white px-4 py-3 rounded-lg font-medium transition shadow-md"
                   >
                     <FaLeaf />
-                    <span>Retake Prakriti Assessment</span>
+                    <span>Retake AI Assessment</span>
                   </button>
-                  
-                  <a
-                    href="https://artoflivingretreatcenter.org/ayurveda/which-ayurveda-type-are-you-quiz/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg font-medium transition text-sm"
-                  >
-                    <FaExternalLinkAlt className="text-xs" />
-                    <span>Or try detailed quiz from Art of Living</span>
-                  </a>
                 </div>
               </div>
             ) : (
               <div className="text-center py-8">
-                <FaLeaf className="text-6xl text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">
-                  Your prakriti hasn't been assessed yet.
-                </p>
-                <p className="text-sm text-gray-500 mb-6">
-                  Take a quick assessment to discover your Ayurvedic body type
-                </p>
+                <div className="mb-6">
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full mb-4">
+                    <FaRobot className="text-4xl text-purple-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    Discover Your Prakriti
+                  </h3>
+                  <p className="text-gray-600 mb-2">
+                    Your Ayurvedic constitution hasn't been assessed yet.
+                  </p>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Take our AI-powered assessment (29 questions) to discover your unique dosha balance
+                  </p>
+                </div>
 
-                {/* Take Quiz Buttons */}
-                <div className="space-y-3">
-                  <button
-                    onClick={() => setShowQuiz(true)}
-                    className="w-full flex items-center justify-center space-x-2 bg-ayur-primary hover:bg-opacity-90 text-white px-6 py-3 rounded-lg font-bold transition"
-                  >
-                    <FaLeaf />
-                    <span>Take Prakriti Assessment</span>
-                  </button>
-                  
-                  <p className="text-sm text-gray-500">or</p>
-                  
-                  <a
-                    href="https://artoflivingretreatcenter.org/ayurveda/which-ayurveda-type-are-you-quiz/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition"
-                  >
-                    <FaExternalLinkAlt />
-                    <span>Take detailed quiz from Art of Living</span>
-                  </a>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Chat with AyurAI to get automatic assessment
+                <div className="max-w-md mx-auto space-y-4">
+                  {/* ML Assessment */}
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                    <div className="flex items-start space-x-3 mb-3">
+                      <FaRobot className="text-2xl text-purple-600 mt-1" />
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-purple-900">
+                          Machine Learning Powered
+                        </p>
+                        <p className="text-xs text-purple-700">
+                          Trained on 1,200 authentic Ayurvedic profiles for accurate results
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowQuiz(true)}
+                      className="w-full flex items-center justify-center space-x-2 bg-ayur-primary hover:bg-opacity-90 text-white px-6 py-3 rounded-lg font-bold transition shadow-md"
+                    >
+                      <FaLeaf />
+                      <span>Take AI Assessment</span>
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-gray-400">
+                    ✨ Get personalized Ayurvedic recommendations based on your unique constitution
                   </p>
                 </div>
               </div>

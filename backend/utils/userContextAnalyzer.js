@@ -119,7 +119,15 @@ const extractRecentSymptoms = (consultations) => {
   const symptoms = new Set();
   consultations.slice(0, 3).forEach(c => {
     if (c.symptoms && Array.isArray(c.symptoms)) {
-      c.symptoms.forEach(s => symptoms.add(s));
+      c.symptoms.forEach(s => {
+        // Handle symptom objects (schema: { name, onset, severity, duration, description })
+        if (s && typeof s === 'object' && s.name) {
+          symptoms.add(s.name);
+        } else if (typeof s === 'string') {
+          // Fallback for legacy string format
+          symptoms.add(s);
+        }
+      });
     }
   });
   return Array.from(symptoms);
